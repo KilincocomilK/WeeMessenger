@@ -1,4 +1,4 @@
-![Banner](.\docs\assets\Banner.png)
+![Banner](.\assets\Banner.png)
 
 <h2 align="center">📧小信使 - 一个灵活的微信消息发送器🚀</h2>
 
