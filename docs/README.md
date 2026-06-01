@@ -1,4 +1,6 @@
-![Banner](.\assets\Banner.png)
+<p align="center">
+  <img src=".\assets\Banner.png" alt="Banner" width="100%">
+</p>
 
 <h2 align="center">📧小信使 - 一个灵活的微信消息发送器🚀</h2>
 
