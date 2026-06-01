@@ -1,0 +1,5 @@
+pyperclip
+uiautomation
+websocket-client
+pygame
+pyyaml

@@ -1,0 +1,36 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+*.egg
+dist/
+build/
+
+# Virtual environment
+venv/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+Thumbs.db
+.DS_Store
+
+# Secrets
+.env
+*.pem
+*.key
+
+# Logs
+*.log
+
+# Temp files
+*.tmp
+temp/
+
+# Docs
+CLAUDE.md
+docs/assets/Banner.png
