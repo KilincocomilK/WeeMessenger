@@ -108,7 +108,7 @@ class VoiceSender:
     """语音消息发送器，负责音频解码、播放和微信语音输入模拟"""
 
     def send(self, target_name: str, voice_data_b64: str, voice_format: str = "mp3",
-             ensure_chat_fn=None, lock: threading.Lock | None = None):
+             ensure_chat_fn=None, lock: threading.Lock = None):
         """
         发送语音消息：
         1. 解码 base64 音频 → 临时文件
