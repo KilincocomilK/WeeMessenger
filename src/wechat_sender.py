@@ -29,7 +29,7 @@ class WeChatSender:
     通过内部队列统一调度三种消息类型（文字、语音、表情包）
     """
 
-    def __init__(self, config: dict = None):
+    def __init__(self, config: dict = None, debug_mode: bool = False):
         if config is None:
             config = {}
 
@@ -52,7 +52,7 @@ class WeChatSender:
                 wanderer_cfg.get("times_max", 3),
             ),
         )
-        if wanderer_cfg.get("enabled", True):
+        if not debug_mode and wanderer_cfg.get("enabled", True):
             self.wanderer.start()
         else:
             logger.info("[WCAC] 鼠标漫游已禁用")
@@ -67,11 +67,14 @@ class WeChatSender:
         self._worker_thread.start()
 
         # WebSocket 指令接收
-        ws_url = config.get("ws_url")
-        self.ws_receiver = WSCommandReceiver(ws_url, self.send_queue, self._stop_event)
-        self.ws_receiver.start()
-
-        logger.info(f"[WCAC] 微信发送器初始化完成！WebSocket 地址: {ws_url}")
+        if not debug_mode:
+            ws_url = config.get("ws_url")
+            self.ws_receiver = WSCommandReceiver(ws_url, self.send_queue, self._stop_event)
+            self.ws_receiver.start()
+            logger.info(f"[WCAC] 微信发送器初始化完成！WebSocket 地址: {ws_url}")
+        else:
+            self.ws_receiver = None
+            logger.info("[WCAC] 微信发送器初始化完成！（调试模式，跳过 WebSocket）")
 
     # ==================== 对外接口 ====================
 
@@ -277,8 +280,9 @@ class WeChatSender:
         """安全关闭所有子模块和线程"""
         logger.info("[WCAC] 正在关闭微信发送器...")
         self._stop_event.set()
-        self.ws_receiver.close()
-        self.ws_receiver.join(timeout=3.0)
+        if self.ws_receiver:
+            self.ws_receiver.close()
+            self.ws_receiver.join(timeout=3.0)
         self.wanderer.stop()
         if self._worker_thread.is_alive():
             self._worker_thread.join(timeout=3.0)

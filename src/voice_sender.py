@@ -108,7 +108,7 @@ class VoiceSender:
     """语音消息发送器，负责音频解码、播放和微信语音输入模拟"""
 
     def send(self, target_name: str, voice_data_b64: str, voice_format: str = "mp3",
-             ensure_chat_fn=None, lock: threading.Lock = None):
+             ensure_chat_fn=None, lock: threading.Lock | None = None):
         """
         发送语音消息：
         1. 解码 base64 音频 → 临时文件
@@ -149,8 +149,6 @@ class VoiceSender:
             # 使用 pygame 播放音频
             play_thread = threading.Thread(target=sound.play, daemon=True)
             play_thread.start()
-
-            time.sleep(0.2)  # 等待音频开始播放
 
             # 微信要求录音至少 2 秒，不足则延长 Alt 按住时间
             MIN_VOICE_DURATION = 2.0
