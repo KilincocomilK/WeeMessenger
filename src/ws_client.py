@@ -43,19 +43,19 @@ class WSCommandReceiver:
                 )
                 self.ws.run_forever()
             except Exception as e:
-                logger.error(f"[WCAC] WebSocket 连接异常: {e}")
+                logger.error(f"[WeeMessenger - 错误] WebSocket 连接异常: {e}")
             self._stop_event.wait(5)
 
     def _on_open(self, ws):
         self.connected = True
-        logger.info("WebSocket 已连接")
+        logger.info("[WeeMessenger - 提示] WebSocket 已连接！")
 
     def _on_error(self, ws, error):
-        logger.error(f"[WCAC] WebSocket 错误: {error}")
+        logger.error(f"[WeeMessenger - 错误] WebSocket 错误: {error}")
         self.connected = False
 
     def _on_close(self, ws, close_status_code, close_msg):
-        logger.info("[WCAC] WebSocket 连接关闭")
+        logger.info("[WeeMessenger - 提示] WebSocket 连接关闭！")
         self.connected = False
 
     def _on_message(self, ws, message):
@@ -65,25 +65,25 @@ class WSCommandReceiver:
             msg_type = data.get("type")
             target = data.get("target")
             if not target:
-                logger.warning("[WCAC] 收到的指令缺少 target 字段，忽略")
+                logger.warning("[WeeMessenger - 警告] 收到的指令缺少 target 字段，忽略消息~")
                 return
 
             if msg_type == "send_message":
                 content = data.get("message")
                 if not content:
-                    logger.warning("[WCAC] send_message 缺少 message 字段，忽略")
+                    logger.warning("[WeeMessenger - 警告] send_message 缺少 message 字段，忽略消息~")
                     return
                 self.send_queue.put({
                     "type": "send_message",
                     "target": target,
                     "message": content,
                 })
-                logger.info(f"[WCAC] 接收 send_message: 目标='{target}', 长度={len(content)}")
+                logger.info(f"[WeeMessenger - 提示] 接收 send_message: 目标='{target}', 长度={len(content)}")
 
             elif msg_type == "send_voice":
                 voice_data_b64 = data.get("voice_data")
                 if not voice_data_b64:
-                    logger.warning("[WCAC] send_voice 缺少 voice_data，将只发送文字")
+                    logger.warning("[WeeMessenger - 警告] send_voice 缺少 voice_data，只发送文字~")
                     content = data.get("message")
                     if content:
                         self.send_queue.put({
@@ -100,27 +100,27 @@ class WSCommandReceiver:
                     "voice_data": voice_data_b64,
                     "voice_format": data.get("format", "mp3"),
                 })
-                logger.info(f"[WCAC] 接收 send_voice: 目标='{target}', 音频长度={len(voice_data_b64)}")
+                logger.info(f"[WeeMessenger - 提示] 接收 send_voice: 目标='{target}', 音频长度={len(voice_data_b64)}")
 
             elif msg_type == "send_sticker":
                 sticker_data_b64 = data.get("sticker_data")
                 if not sticker_data_b64:
-                    logger.warning("[WCAC] send_sticker 缺少 sticker_data 字段，忽略")
+                    logger.warning("[WeeMessenger - 警告] send_sticker 缺少 sticker_data 字段，忽略消息~")
                     return
                 self.send_queue.put({
                     "type": "send_sticker",
                     "target": target,
                     "sticker_data": sticker_data_b64,
                 })
-                logger.info(f"[WCAC] 接收 send_sticker: 目标='{target}', 数据长度={len(sticker_data_b64)}")
+                logger.info(f"[WeeMessenger - 提示] 接收 send_sticker: 目标='{target}', 数据长度={len(sticker_data_b64)}")
 
             else:
-                logger.debug(f"[WCAC] 忽略未知指令类型: {msg_type}")
+                logger.debug(f"[WeeMessenger - 提示] 忽略未知指令类型: {msg_type}")
 
         except json.JSONDecodeError:
-            logger.error(f"[WCAC] WebSocket 消息不是有效的 JSON: {message}")
+            logger.error(f"[WeeMessenger - 错误] WebSocket 消息不是有效的 JSON: {message}")
         except Exception as e:
-            logger.error(f"[WCAC] 处理 WebSocket 消息异常: {e}", exc_info=True)
+            logger.error(f"[WeeMessenger - 错误] 处理 WebSocket 消息异常: {e}", exc_info=True)
 
     def close(self):
         """关闭 WebSocket 连接"""

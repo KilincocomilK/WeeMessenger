@@ -52,16 +52,16 @@ def load_config(path: str = None) -> dict:
 
     if os.path.exists(path):
         if not _HAS_YAML:
-            logger.warning("[WCAC] PyYAML 未安装，使用默认配置。请执行: pip install pyyaml")
+            logger.warning("[WeeMessenger - 警告] PyYAML 未安装，使用默认配置。请执行: pip install pyyaml")
             return config
         try:
             with open(path, "r", encoding="utf-8") as f:
                 user_config = yaml.safe_load(f) or {}
             config = _deep_merge(config, user_config)
-            logger.info(f"[WCAC] 已加载配置文件: {path}")
+            logger.info(f"[WeeMessenger - 提示] 已加载配置文件: {path}")
         except Exception as e:
-            logger.warning(f"[WCAC] 配置文件读取失败 ({e})，使用默认配置")
+            logger.warning(f"[WeeMessenger - 警告] 配置文件读取失败 ({e})，使用默认配置")
     else:
-        logger.info(f"[WCAC] 配置文件不存在 ({path})，使用默认配置")
+        logger.info(f"[WeeMessenger - 提示] 配置文件不存在 ({path})，使用默认配置")
 
     return config

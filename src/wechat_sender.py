@@ -1,6 +1,6 @@
 """
 微信消息发送器核心模块
-负责 UI 自动化（查找窗口、文字/表情包发送）、队列调度和各子模块的协调。
+负责 UI 自动化、队列调度和各子模块的协调。
 """
 
 import logging
@@ -23,10 +23,9 @@ logger = logging.getLogger("WeChatSender")
 
 class WeChatSender:
     """
-    微信消息发送器（WebSocket 控制版 · 全天候）
-
-    组合鼠标漫游、WebSocket 指令接收、语音发送、剪贴板工具等模块，
-    通过内部队列统一调度三种消息类型（文字、语音、表情包）
+    微信消息发送器
+    组合鼠标漫游、WebSocket 指令接收、语音发送、剪贴板工具等模块
+    通过内部队列统一调度文字、语音、表情包三种消息类型
     """
 
     def __init__(self, config: dict = None, debug_mode: bool = False):
@@ -55,7 +54,7 @@ class WeChatSender:
         if not debug_mode and wanderer_cfg.get("enabled", True):
             self.wanderer.start()
         else:
-            logger.info("[WCAC] 鼠标漫游已禁用")
+            logger.info("[WeeMessenger - 提示] 鼠标漫游已禁用")
 
         # 语音发送器（仅当音频可用）
         self.voice_sender: Optional[VoiceSender] = None
@@ -71,10 +70,10 @@ class WeChatSender:
             ws_url = config.get("ws_url")
             self.ws_receiver = WSCommandReceiver(ws_url, self.send_queue, self._stop_event)
             self.ws_receiver.start()
-            logger.info(f"[WCAC] 微信发送器初始化完成！WebSocket 地址: {ws_url}")
+            logger.info(f"[WeeMessenger - 提示] 微信发送器初始化完成！WebSocket 地址: {ws_url}")
         else:
             self.ws_receiver = None
-            logger.info("[WCAC] 微信发送器初始化完成！（调试模式，跳过 WebSocket）")
+            logger.info("[WeeMessenger - 提示] 微信发送器初始化完成！（调试模式，跳过 WebSocket）")
 
     # ==================== 对外接口 ====================
 
@@ -90,7 +89,7 @@ class WeChatSender:
 
     def _send_worker(self):
         """发送工作线程主循环，从队列取指令并分发到对应处理方法"""
-        logger.info("[WCAC] 发送工作线程启动！")
+        logger.info("[WeeMessenger - 提示] 发送工作线程启动！")
         with auto.UIAutomationInitializerInThread():
             while not self._stop_event.is_set():
                 try:
@@ -117,23 +116,23 @@ class WeChatSender:
                                 lock=self.ui_lock,
                             )
                         else:
-                            logger.warning("[WCAC] 音频不可用，语音发送已跳过")
+                            logger.warning("[WeeMessenger - 警告] 音频不可用，语音发送已跳过")
 
                     elif cmd_type == "send_sticker":
                         self._execute_send_sticker(target, cmd["sticker_data"])
 
                     else:
-                        logger.error(f"[WCAC] 未知指令类型: {cmd_type}")
+                        logger.error(f"[WeeMessenger - 错误] 未知指令类型: {cmd_type}")
 
                     # 指令间随机延迟
                     delay = random.randint(1, 3) + random.uniform(0.5, 1.5)
-                    logger.info(f"[WCAC] 指令完成，等待 {delay:.1f} 秒")
+                    logger.info(f"[WeeMessenger - 提示] 指令完成，等待 {delay:.1f} 秒")
                     time.sleep(delay)
 
                 except Empty:
                     continue
                 except Exception as e:
-                    logger.error(f"[WCAC] 发送工作异常: {e}", exc_info=True)
+                    logger.error(f"[WeeMessenger - 错误] 发送工作异常: {e}", exc_info=True)
 
     # ==================== UI 自动化（文字发送）====================
 
@@ -155,20 +154,20 @@ class WeChatSender:
         """
         window = self.find_wechat_window()
         if not window:
-            raise RuntimeError("[WCAC] 未找到微信窗口")
+            raise RuntimeError("[WeeMessenger - 错误] 未找到微信窗口")
         window.SetActive()
         time.sleep(random.uniform(0.1, 0.3))
 
         if self.last_target == target_name:
-            logger.info(f"[WCAC] 目标与上次相同 ({target_name})，复用当前聊天窗口")
+            logger.info(f"[WeeMessenger - 提示 目标与上次相同 ({target_name})，复用当前聊天窗口")
             return
 
-        logger.info(f"[WCAC] 搜索联系人 '{target_name}'")
+        logger.info(f"[WeeMessenger] 搜索联系人 '{target_name}'")
         auto.SendKeys('{Ctrl}f')
         time.sleep(random.uniform(0.3, 0.5))
         pyperclip.copy(target_name)
         auto.SendKeys('{Ctrl}v')
-        time.sleep(0.2)
+        time.sleep(0.01)
         auto.SendKeys('{Enter}')
         time.sleep(random.uniform(0.8, 1.0))
         self.last_target = target_name
@@ -180,21 +179,21 @@ class WeChatSender:
         2. 若目标与上次相同则快速粘贴发送；否则通过 Ctrl+F 搜索后发送
         """
         if not self.ui_lock.acquire(timeout=5.0):
-            logger.error("[WCAC] 获取UI锁超时，取消发送")
+            logger.error("[WeeMessenger - 错误] 获取UI锁超时，取消发送")
             return
 
         try:
             time.sleep(random.uniform(0.5, 2.0))
             window = self.find_wechat_window()
             if not window:
-                logger.error("[WCAC] 未找到微信窗口，发送中止")
+                logger.error("[WeeMessenger - 错误] 未找到微信窗口，发送中止")
                 return
             window.SetActive()
             time.sleep(random.uniform(0.1, 0.3))
 
             fast_sent = False
             if self.last_target == target:
-                logger.info(f"[WCAC] 目标与上次相同 ({target})，尝试快速发送")
+                logger.info(f"[WeeMessenger - 提示] 目标与上次相同 ({target})，尝试快速发送")
                 try:
                     pyperclip.copy(message)
                     time.sleep(random.uniform(0.1, 0.3))
@@ -202,10 +201,10 @@ class WeChatSender:
                     sleep_time = min(len(message) * 0.02, 2.0) + random.uniform(0.5, 1.5)
                     time.sleep(sleep_time)
                     auto.SendKeys('{Enter}')
-                    logger.info(f"[WCAC] 快速发送完成: {target}")
+                    logger.info(f"[WeeMessenger - 提示] 快速发送完成: {target}")
                     fast_sent = True
                 except Exception as e:
-                    logger.warning(f"[WCAC] 快速发送失败: {e}")
+                    logger.warning(f"[WeeMessenger - 警告] 快速发送失败: {e}")
 
             if not fast_sent:
                 self._ensure_chat_window(target)
@@ -217,13 +216,13 @@ class WeChatSender:
                 sleep_time = min(len(message) * 0.02, 2.0) + random.uniform(0.5, 1.5)
                 time.sleep(sleep_time)
                 auto.SendKeys('{Enter}')
-                logger.info(f"[WCAC] 完整发送完成: {target}")
+                logger.info(f"[WeeMessenger - 提示] 完整发送完成: {target}")
 
             self.last_target = target
             time.sleep(random.uniform(0.5, 1.5))
 
         except Exception as e:
-            logger.error(f"[WCAC] 模拟发送文字异常: {e}", exc_info=True)
+            logger.error(f"[WeeMessenger - 错误] 模拟发送文字异常: {e}", exc_info=True)
         finally:
             self.ui_lock.release()
 
@@ -241,7 +240,7 @@ class WeChatSender:
         import tempfile
 
         if not self.ui_lock.acquire(timeout=10.0):
-            logger.error("[WCAC] 获取UI锁超时，取消表情包发送")
+            logger.error("[WeeMessenger - 错误] 获取UI锁超时，取消表情包发送")
             return
 
         tmp_path = None
@@ -251,7 +250,7 @@ class WeChatSender:
                 tmp_path = tmp.name
                 tmp.write(sticker_bytes)
 
-            logger.info(f"[WCAC] 表情包临时文件: {tmp_path}")
+            logger.info(f"[WeeMessenger] 表情包临时文件: {tmp_path}")
 
             self._ensure_chat_window(target)
             copy_file_to_clipboard(tmp_path)
@@ -262,23 +261,23 @@ class WeChatSender:
             auto.SendKeys('{Enter}')
             time.sleep(random.uniform(0.5, 1.0))
 
-            logger.info(f"[WCAC] 表情包已发送给: {target}")
+            logger.info(f"[WeeMessenger - 提示] 表情包已发送给: {target}")
 
         except Exception as e:
-            logger.error(f"[WCAC] 发送表情包异常: {e}", exc_info=True)
+            logger.error(f"[WeeMessenger - 错误] 发送表情包异常: {e}", exc_info=True)
         finally:
             if tmp_path and os.path.exists(tmp_path):
                 try:
                     os.unlink(tmp_path)
                 except Exception as e:
-                    logger.warning(f"[WCAC] 清理临时表情包文件失败: {e}")
+                    logger.warning(f"[WeeMessenger - 警告] 清理临时表情包文件失败: {e}")
             self.ui_lock.release()
 
     # ==================== 生命周期 ====================
 
     def shutdown(self):
         """安全关闭所有子模块和线程"""
-        logger.info("[WCAC] 正在关闭微信发送器...")
+        logger.info("[WeeMessenger - 提示] 正在关闭微信发送器……")
         self._stop_event.set()
         if self.ws_receiver:
             self.ws_receiver.close()
@@ -286,4 +285,4 @@ class WeChatSender:
         self.wanderer.stop()
         if self._worker_thread.is_alive():
             self._worker_thread.join(timeout=3.0)
-        logger.info("[WCAC] 微信发送器已关闭！")
+        logger.info("[WeeMessenger - 提示] 微信发送器已关闭！")

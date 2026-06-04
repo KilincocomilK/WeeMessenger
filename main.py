@@ -36,14 +36,14 @@ def debug_console_loop(sender):
         try:
             line = input(">>> ").strip()
         except (EOFError, KeyboardInterrupt):
-            print("\n[WCAC] 收到退出信号")
+            print("\n[WeeMessenger] 收到退出信号")
             break
 
         if not line:
             continue
 
         if line in ("/quit", "/exit"):
-            print("[WCAC] 退出调试模式")
+            print("[WeeMessenger] 退出调试模式")
             break
 
         if line == "/help":
@@ -57,7 +57,7 @@ def debug_console_loop(sender):
             continue
 
         sender.send_message(target, line)
-        print(f"[WCAC] 消息已投入发送队列 -> 「{target}」")
+        print(f"[WeeMessenger] 消息已投入发送队列 -> 「{target}」")
 
 
 def main():
@@ -83,22 +83,22 @@ def main():
     sender = WeChatSender(config, debug_mode=args.debug)
 
     if args.debug:
-        print("[WCAC] 微信发送器已启动（调试模式），未连接 WebSocket")
+        print("[WeeMessenger - 提示] 微信发送器已启动（调试模式），未连接 WebSocket")
         debug_console_loop(sender)
         sender.shutdown()
-        print("[WCAC] 程序退出成功！拜拜！=w=")
+        print("[WeeMessenger - 提示] 程序退出成功！拜拜！=w=")
     else:
-        print("[WCAC] 微信发送器已启动（全天候），等待 WebSocket 指令...")
-        print("[WCAC] 按 Ctrl+C 退出")
+        print("[WeeMessenger - 提示] 微信发送器已启动（全天候），等待 WebSocket 指令……")
+        print("[WeeMessenger - 提示] 按 Ctrl+C 退出")
 
         try:
             while True:
                 time.sleep(1)
         except KeyboardInterrupt:
-            print("\n[WCAC] 收到退出信号")
+            print("\n[WeeMessenger - 提示] 收到退出信号")
         finally:
             sender.shutdown()
-            print("[WCAC] 程序退出成功！拜拜！=w=")
+            print("[WeeMessenger - 提示] 程序退出成功！拜拜！=w=")
 
 
 if __name__ == "__main__":

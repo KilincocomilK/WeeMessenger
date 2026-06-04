@@ -85,7 +85,7 @@ class MouseWanderer:
 
     def _run_loop(self):
         """鼠标漫游主循环（在独立线程中运行）"""
-        logger.info("[WCAC] 鼠标漫游线程已启动")
+        logger.info("[WeeMessenger - 提示] 鼠标漫游线程已启动")
         with auto.UIAutomationInitializerInThread():
             while not self._stop_event.is_set():
                 # 使用 Event.wait 替代 time.sleep，关闭时可即时响应
@@ -96,7 +96,7 @@ class MouseWanderer:
                 try:
                     self._random_wander(times)
                 except Exception as e:
-                    logger.warning(f"[WCAC] 鼠标漫游异常: {e}")
+                    logger.warning(f"[WeeMessenger - 警告] 鼠标漫游异常: {e}")
 
     def start(self):
         """启动鼠标漫游后台线程"""

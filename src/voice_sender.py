@@ -19,9 +19,9 @@ try:
     import pygame.mixer
     pygame.mixer.init()
     AUDIO_AVAILABLE = True
-    logger.info("[WCAC] 音频播放后端：pygame.mixer")
+    logger.info("[WeeMessenger - 提示] 音频播放后端：pygame.mixer")
 except Exception as e:
-    logger.warning(f"[WCAC] pygame.mixer 初始化失败: {e}。语音功能不可用。")
+    logger.warning(f"[WeeMessenger - 警告] pygame.mixer 初始化失败: {e}。语音功能不可用。")
 
 
 # ── SendInput 键盘模拟结构 ──
@@ -87,7 +87,7 @@ def _send_key(vk_code: int, key_up: bool = False):
     )
     sent = ctypes.windll.user32.SendInput(1, ctypes.byref(inp), ctypes.sizeof(_INPUT))
     if sent != 1:
-        logger.warning(f"[WCAC] SendInput 返回 {sent}，按键模拟可能未生效")
+        logger.warning(f"[WeeMessenger - 警告] SendInput 返回 {sent}，按键模拟可能未生效")
 
 
 def _safe_alt_hold(hold_seconds: float):
@@ -96,12 +96,12 @@ def _safe_alt_hold(hold_seconds: float):
     使用 try/finally 确保即使异常发生也会释放 Alt，避免键盘卡死。
     """
     _send_key(VK_MENU, key_up=False)
-    logger.info(f"[WCAC] 已按下 Alt 键，持续 {hold_seconds:.1f}s ...")
+    logger.info(f"[WeeMessenger - 提示] 已按下 Alt 键，持续 {hold_seconds:.1f}s ……")
     try:
         time.sleep(hold_seconds)
     finally:
         _send_key(VK_MENU, key_up=True)
-        logger.info("[WCAC] 已释放 Alt 键")
+        logger.info("[WeeMessenger - 提示] 已释放 Alt 键")
 
 
 class VoiceSender:
@@ -117,7 +117,7 @@ class VoiceSender:
         4. 释放 Alt 键完成发送
         """
         if not AUDIO_AVAILABLE:
-            logger.error("[WCAC] 音频库不可用，无法发送语音")
+            logger.error("[WeeMessenger - 错误] 音频库不可用，无法发送语音")
             return
 
         tmp_path = None
@@ -125,7 +125,7 @@ class VoiceSender:
         # 获取 UI 锁（如果有），保护 ensure_chat_fn 及 Alt 按键操作
         if lock:
             if not lock.acquire(timeout=10.0):
-                logger.error("[WCAC] 获取UI锁超时，取消语音发送")
+                logger.error("[WeeMessenger - 错误] 获取UI锁超时，取消语音发送")
                 return
 
         try:
@@ -135,7 +135,7 @@ class VoiceSender:
                 tmp_path = tmp.name
                 tmp.write(audio_bytes)
 
-            logger.info(f"[WCAC] 语音文件已临时保存: {tmp_path}")
+            logger.info(f"[WeeMessenger - 提示] 语音文件已临时保存: {tmp_path}")
 
             # 确保聊天窗口就绪（在锁保护下执行）
             if ensure_chat_fn:
@@ -144,7 +144,7 @@ class VoiceSender:
             # 通过 pygame 加载音频并获取时长
             sound = pygame.mixer.Sound(tmp_path)
             duration = max(sound.get_length(), 0.0)
-            logger.info(f"[WCAC] 音频时长: {duration:.2f} 秒")
+            logger.info(f"[WeeMessenger - 提示] 音频时长: {duration:.2f} 秒")
 
             # 使用 pygame 播放音频
             play_thread = threading.Thread(target=sound.play, daemon=True)
@@ -155,22 +155,22 @@ class VoiceSender:
             hold_duration = max(duration, MIN_VOICE_DURATION)
             if hold_duration > duration:
                 logger.info(
-                    f"[WCAC] 音频时长 {duration:.2f}s 不足 {MIN_VOICE_DURATION}s，"
-                    f"[WCAC] Alt 按住时间延长至 {hold_duration:.2f}s"
+                    f"[WeeMessenger - 提示] 音频时长 {duration:.2f}s 不足 {MIN_VOICE_DURATION}s，"
+                    f"[WeeMessenger - 提示] Alt 按住时间延长至 {hold_duration:.2f}s"
                 )
 
             # 安全模拟 Alt 按住（异常时自动释放）
             _safe_alt_hold(hold_duration)
             play_thread.join(timeout=hold_duration + 2.0)
-            logger.info(f"[WCAC] 语音消息已发送给: {target_name}")
+            logger.info(f"[WeeMessenger - 提示] 语音消息已发送给: {target_name}")
 
         except Exception as e:
-            logger.error(f"[WCAC] 发送语音异常: {e}", exc_info=True)
+            logger.error(f"[WeeMessenger - 错误] 发送语音异常: {e}", exc_info=True)
         finally:
             if tmp_path and os.path.exists(tmp_path):
                 try:
                     os.unlink(tmp_path)
                 except Exception as e:
-                    logger.warning(f"[WCAC] 清理临时语音文件失败: {e}")
+                    logger.warning(f"[WeeMessenger - 警告] 清理临时语音文件失败: {e}")
             if lock:
                 lock.release()

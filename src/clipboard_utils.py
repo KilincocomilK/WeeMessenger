@@ -40,12 +40,12 @@ def copy_file_to_clipboard(file_path: str):
     GMEM_MOVEABLE = 0x0002
     hGlobal = ctypes.windll.kernel32.GlobalAlloc(GMEM_MOVEABLE, total_size)
     if not hGlobal:
-        raise RuntimeError("GlobalAlloc 失败")
+        raise RuntimeError("[WeeMessenger - 错误] GlobalAlloc 失败")
 
     try:
         locked_mem = ctypes.windll.kernel32.GlobalLock(hGlobal)
         if not locked_mem:
-            raise RuntimeError("GlobalLock 失败")
+            raise RuntimeError("[WeeMessenger - 错误] GlobalLock 失败")
 
         try:
             df = _DROPFILES()
@@ -61,13 +61,13 @@ def copy_file_to_clipboard(file_path: str):
             ctypes.windll.kernel32.GlobalUnlock(hGlobal)
 
         if not ctypes.windll.user32.OpenClipboard(None):
-            raise RuntimeError("无法打开剪贴板")
+            raise RuntimeError("[WeeMessenger - 错误] 无法打开剪贴板")
 
         try:
             ctypes.windll.user32.EmptyClipboard()
             CF_HDROP = 15
             if not ctypes.windll.user32.SetClipboardData(CF_HDROP, hGlobal):
-                raise RuntimeError("SetClipboardData 失败")
+                raise RuntimeError("[WeeMessenger - 错误] SetClipboardData 失败")
             hGlobal = None  # 内存已移交剪贴板，不再需要释放
         finally:
             ctypes.windll.user32.CloseClipboard()
