@@ -4,14 +4,26 @@
 # ============================================================================
 
 # ----------------------------------------------------------------------------
-# WebSocket 服务器地址 - 必改 | WebSocket Server Address - Required
+# WebSocket 服务器 - 选改 | WebSocket Server - Optional
 # ----------------------------------------------------------------------------
 # 消息来源地址，小信使会将该来源的消息自动转发至微信
 # Messages from this source will be auto-forwarded to WeChat
-ws_url: "ws://192.168.1.1:1234/ws"
+ws:
+  enabled: false          # 是否启用 / Enable
+  url: "ws://127.0.0.1:1234/ws"
 
 # ----------------------------------------------------------------------------
-# 防检测鼠标自然漫游参数 - 可改 | Anti-Detection Mouse Natural Roaming Parameters
+# HTTP 服务器 - 选改 | HTTP Server - Optional
+# ----------------------------------------------------------------------------
+# 可与 WebSocket 并行工作，同时接收指令
+# Works in parallel with WebSocket to receive commands
+http:
+  enabled: false          # 是否启用 / Enable
+  host: "0.0.0.0"
+  port: 9877
+
+# ----------------------------------------------------------------------------
+# 防检测鼠标自然漫游参数 - 选改 | Anti-Detection Mouse Natural Roaming Parameters
 # ----------------------------------------------------------------------------
 wanderer:
   enabled: true          # 是否启用 / Enable

@@ -36,23 +36,23 @@ def debug_console_loop(sender):
         try:
             line = input(">>> ").strip()
         except (EOFError, KeyboardInterrupt):
-            print("\n[WeeMessenger] 收到退出信号")
+            print("\n[WeeMessenger - 提示] 收到退出信号")
             break
 
         if not line:
             continue
 
         if line in ("/quit", "/exit"):
-            print("[WeeMessenger] 退出调试模式")
+            print("[WeeMessenger - 提示] 退出调试模式")
             break
 
         if line == "/help":
             print()
             print("  可用命令:")
-            print("    /quit, /exit    退出调试模式")
             print("    /help           显示此帮助信息")
-            print(f"    任意其他文字      发送到「{target}」")
-            print("    Ctrl+C          等同于 /quit")
+            print(f"    任意文字        发送到「{target}」")
+            print("    /quit, /exit    退出调试模式")
+            print("    Ctrl+C          退出调试模式")
             print()
             continue
 
@@ -83,13 +83,13 @@ def main():
     sender = WeChatSender(config, debug_mode=args.debug)
 
     if args.debug:
-        print("[WeeMessenger - 提示] 微信发送器已启动（调试模式），未连接 WebSocket")
+        print("[WeeMessenger - 提示] 调试模式启动成功！=w=")
         debug_console_loop(sender)
         sender.shutdown()
         print("[WeeMessenger - 提示] 程序退出成功！拜拜！=w=")
     else:
-        print("[WeeMessenger - 提示] 微信发送器已启动（全天候），等待 WebSocket 指令……")
-        print("[WeeMessenger - 提示] 按 Ctrl+C 退出")
+        print("[WeeMessenger - 提示] 小信使启动成功！=w=")
+        print("[WeeMessenger - 提示] 按 Ctrl+C 退出小信使")
 
         try:
             while True:

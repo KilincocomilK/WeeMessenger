@@ -16,7 +16,8 @@ import uiautomation as auto
 from .clipboard_utils import copy_file_to_clipboard
 from .mouse_wanderer import MouseWanderer
 from .voice_sender import VoiceSender, AUDIO_AVAILABLE
-from .ws_client import WSCommandReceiver
+from .network.ws_client import WSCommandReceiver
+from .network.http_server import HTTPCommandReceiver
 
 logger = logging.getLogger("WeChatSender")
 
@@ -65,15 +66,44 @@ class WeChatSender:
         self._worker_thread = threading.Thread(target=self._send_worker, daemon=True)
         self._worker_thread.start()
 
-        # WebSocket 指令接收
+        # 网络指令接收
         if not debug_mode:
-            ws_url = config.get("ws_url")
-            self.ws_receiver = WSCommandReceiver(ws_url, self.send_queue, self._stop_event)
-            self.ws_receiver.start()
-            logger.info(f"[WeeMessenger - 提示] 微信发送器初始化完成！WebSocket 地址: {ws_url}")
+            # WebSocket
+            ws_cfg = config.get("ws", {})
+            if ws_cfg.get("enabled", True):
+                ws_url = ws_cfg.get("url", "ws://127.0.0.1:9876")
+                self.ws_receiver = WSCommandReceiver(ws_url, self.send_queue, self._stop_event)
+                self.ws_receiver.start()
+                logger.info(f"[WeeMessenger - 提示] WebSocket 已连接: {ws_url}")
+            else:
+                self.ws_receiver = None
+                logger.info("[WeeMessenger - 提示] WebSocket 已禁用")
+
+            # HTTP
+            http_cfg = config.get("http", {})
+            if http_cfg.get("enabled", True):
+                http_host = http_cfg.get("host", "0.0.0.0")
+                http_port = http_cfg.get("port", 9877)
+                self.http_receiver = HTTPCommandReceiver(
+                    http_host, http_port, self.send_queue, self._stop_event
+                )
+                self.http_receiver.start()
+                logger.info(f"[WeeMessenger - 提示] HTTP 服务器已启动: http://{http_host}:{http_port}")
+            else:
+                self.http_receiver = None
+                logger.info("[WeeMessenger - 提示] HTTP 服务器已禁用")
+
+            # 两个模式都禁用时提醒
+            if not self.ws_receiver and not self.http_receiver:
+                logger.warning("╔════════════════════════════════════════════════════════════╗")
+                logger.warning("║  [温馨提示] WebSocket 和 HTTP 均已禁用                     ║")
+                logger.warning("║  小信使将无法接收任何外部消息！                            ║")
+                logger.warning("║  如需使用，请编辑 config.yaml 启用至少一个模式后重启程序~  ║")
+                logger.warning("╚════════════════════════════════════════════════════════════╝")
         else:
             self.ws_receiver = None
-            logger.info("[WeeMessenger - 提示] 微信发送器初始化完成！（调试模式，跳过 WebSocket）")
+            self.http_receiver = None
+            logger.info("[WeeMessenger - 提示] 微信发送器初始化完成！（调试模式，跳过网络模块）")
 
     # ==================== 对外接口 ====================
 
@@ -282,6 +312,9 @@ class WeChatSender:
         if self.ws_receiver:
             self.ws_receiver.close()
             self.ws_receiver.join(timeout=3.0)
+        if self.http_receiver:
+            self.http_receiver.close()
+            self.http_receiver.join(timeout=3.0)
         self.wanderer.stop()
         if self._worker_thread.is_alive():
             self._worker_thread.join(timeout=3.0)

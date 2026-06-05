@@ -8,9 +8,11 @@ import logging
 import threading
 import time
 from queue import Queue
-from typing import Any, Dict, Optional
+from typing import Optional
 
 import websocket
+
+from .message_validator import validate_and_normalize_message
 
 logger = logging.getLogger("WeChatSender.WSClient")
 
@@ -62,60 +64,21 @@ class WSCommandReceiver:
         """接收 JSON 指令，校验字段后投入发送队列"""
         try:
             data = json.loads(message)
-            msg_type = data.get("type")
-            target = data.get("target")
-            if not target:
-                logger.warning("[WeeMessenger - 警告] 收到的指令缺少 target 字段，忽略消息~")
+            cmd, error = validate_and_normalize_message(data)
+            if error:
+                logger.warning(f"[WeeMessenger - 警告] {error}")
                 return
 
-            if msg_type == "send_message":
-                content = data.get("message")
-                if not content:
-                    logger.warning("[WeeMessenger - 警告] send_message 缺少 message 字段，忽略消息~")
-                    return
-                self.send_queue.put({
-                    "type": "send_message",
-                    "target": target,
-                    "message": content,
-                })
-                logger.info(f"[WeeMessenger - 提示] 接收 send_message: 目标='{target}', 长度={len(content)}")
+            self.send_queue.put(cmd)
+            cmd_type = cmd["type"]
+            target = cmd["target"]
 
-            elif msg_type == "send_voice":
-                voice_data_b64 = data.get("voice_data")
-                if not voice_data_b64:
-                    logger.warning("[WeeMessenger - 警告] send_voice 缺少 voice_data，只发送文字~")
-                    content = data.get("message")
-                    if content:
-                        self.send_queue.put({
-                            "type": "send_message",
-                            "target": target,
-                            "message": content,
-                        })
-                    return
-
-                self.send_queue.put({
-                    "type": "send_voice",
-                    "target": target,
-                    "message": data.get("message", ""),
-                    "voice_data": voice_data_b64,
-                    "voice_format": data.get("format", "mp3"),
-                })
-                logger.info(f"[WeeMessenger - 提示] 接收 send_voice: 目标='{target}', 音频长度={len(voice_data_b64)}")
-
-            elif msg_type == "send_sticker":
-                sticker_data_b64 = data.get("sticker_data")
-                if not sticker_data_b64:
-                    logger.warning("[WeeMessenger - 警告] send_sticker 缺少 sticker_data 字段，忽略消息~")
-                    return
-                self.send_queue.put({
-                    "type": "send_sticker",
-                    "target": target,
-                    "sticker_data": sticker_data_b64,
-                })
-                logger.info(f"[WeeMessenger - 提示] 接收 send_sticker: 目标='{target}', 数据长度={len(sticker_data_b64)}")
-
-            else:
-                logger.debug(f"[WeeMessenger - 提示] 忽略未知指令类型: {msg_type}")
+            if cmd_type == "send_message":
+                logger.info(f"[WeeMessenger - 提示] 接收 send_message: 目标='{target}', 长度={len(cmd['message'])}")
+            elif cmd_type == "send_voice":
+                logger.info(f"[WeeMessenger - 提示] 接收 send_voice: 目标='{target}', 音频长度={len(cmd['voice_data'])}")
+            elif cmd_type == "send_sticker":
+                logger.info(f"[WeeMessenger - 提示] 接收 send_sticker: 目标='{target}', 数据长度={len(cmd['sticker_data'])}")
 
         except json.JSONDecodeError:
             logger.error(f"[WeeMessenger - 错误] WebSocket 消息不是有效的 JSON: {message}")

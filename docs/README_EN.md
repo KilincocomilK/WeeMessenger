@@ -10,7 +10,7 @@
 
 ## Core Features
 
-Receives external messages via WebSocket and leverages UI automation to send text, voice messages, and stickers (GIF) through WeChat PC client. Compatible with newer WeChat versions, supports joining group chats, and includes lightweight anti-detection mechanisms to reduce the risk of being flagged.
+Receives external messages via WebSocket or HTTP and leverages UI automation to send text, voice messages, and stickers (GIF) through WeChat PC client. Compatible with newer WeChat versions, supports joining group chats, and includes lightweight anti-detection mechanisms to reduce the risk of being flagged.
 
 ---
 
@@ -29,7 +29,15 @@ Edit `config.yaml` in the project root:
 
 ```yaml
 # WebSocket server address for receiving send commands
-ws_url: "ws://192.168.1.1:1234/ws"
+ws:
+  enabled: true                        # Enable
+  url: "ws://127.0.0.1:1234/ws"
+
+# HTTP server, works in parallel with WebSocket
+http:
+  enabled: true                        # Enable
+  host: "0.0.0.0"
+  port: 9877
 
 # Mouse wanderer anti-detection parameters
 wanderer:
@@ -48,7 +56,7 @@ All configuration options have built-in defaults; only fill in the items you nee
 ### 2. External Setup
 
 * **Voice Messages**: To enable voice messages, download and install VB-Cable to route computer audio through a virtual microphone. Download: https://vb-audio.com/Cable/
-* **Upstream Server**: Start your upstream WebSocket server
+* **Upstream Server**: Start your upstream WebSocket or HTTP server to send commands to WeeMessenger
 
 ### 3. Launch!
 
@@ -57,9 +65,9 @@ All configuration options have built-in defaults; only fill in the items you nee
 > [!IMPORTANT]
 > Before first use, open WeChat, use the shortcut **Ctrl+F**, manually search for the group chat you want to deploy and enter it several times. This ensures the group appears at the **top of the search suggestions**, avoiding interference from "online search results."
 
-## WebSocket Command Protocol
+## Command Protocol
 
-The server sends JSON-formatted commands to this program. Three command types are supported:
+WeeMessenger accepts commands via both WebSocket and HTTP, using the same JSON format. Three command types are supported:
 
 ### Send Text Message
 
@@ -95,6 +103,23 @@ Voice message workflow: If accompanying text is provided, the text is sent first
 }
 ```
 
+### HTTP API
+
+Send a POST request to `/` or `/api/message` with **any of the JSON commands above**:
+
+```bash
+curl -X POST http://127.0.0.1:9877/ \
+  -H "Content-Type: application/json" \
+  -d '{"type":"send_message","target":"File Transfer","message":"Hello"}'
+```
+
+Health check:
+
+```bash
+curl http://127.0.0.1:9877/health
+# {"status": "ok"}
+```
+
 ## Project Structure
 
 ```
@@ -110,10 +135,13 @@ WeeMessenger/
     ├── __init__.py
     ├── config.py            # Configuration management
     ├── wechat_sender.py     # Core sender logic
-    ├── ws_client.py         # WebSocket client
     ├── voice_sender.py      # Voice message sender
     ├── mouse_wanderer.py    # Mouse wanderer
-    └── clipboard_utils.py   # Clipboard utilities
+    ├── clipboard_utils.py   # Clipboard utilities
+    └── network/
+        ├── ws_client.py         # WebSocket client
+        ├── http_server.py       # HTTP server
+        └── message_validator.py # Shared message validation
 ```
 
 ## Notes

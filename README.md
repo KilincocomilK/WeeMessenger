@@ -10,7 +10,7 @@
 
 ## 核心功能
 
-通过 WebSocket 接收外部消息，利用自动化操作，实现微信文字、语音、表情包的自动发送。适用于高版本微信，支持加入群聊，拥有轻量的防检测机制，避免风控。
+通过 WebSocket 或 HTTP 接收外部消息，利用自动化操作，实现微信文字、语音、表情包的自动发送。适用于高版本微信，支持加入群聊，拥有轻量的防检测机制，避免风控。
 
 ---
 
@@ -28,8 +28,16 @@
 编辑项目根目录的 `config.yaml`：
 
 ```yaml
-# WebSocket 服务器地址,用于接收发送指令
-ws_url: "ws://192.168.1.1:1234/ws"
+# WebSocket 服务器，用于接收发送指令
+ws:
+  enabled: true                        # 是否启用
+  url: "ws://127.0.0.1:1234/ws"
+
+# HTTP 服务器，与 WebSocket 并行工作
+http:
+  enabled: true                        # 是否启用
+  host: "0.0.0.0"
+  port: 9877
 
 # 鼠标自然漫游参数
 wanderer:
@@ -48,7 +56,7 @@ log_level: "INFO"
 ### 2. 外部配置
 
 * **语音功能**：若要开启语音功能，请下载 VB-Cable 并安装，从而通过虚拟麦克风录制电脑音频，实现语音功能。下载地址：https://vb-audio.com/Cable/
-* **开启上游**：开启您的上游 WebSocket 服务器
+* **开启上游**：开启您的上游 WebSocket 或 HTTP 服务器，向小信使发送指令
 
 ### 3. 启动！
 
@@ -56,9 +64,9 @@ log_level: "INFO"
 > [!IMPORTANT]
 初次使用前，请先打开微信客户端，使用快捷键 **Crtl + F** ，手动搜索需要部署的群聊名并进入几次，确保群聊出现在**搜索候选栏的首位**，避免受到"搜索网络结果"的影响~
 
-## WebSocket 指令协议
+## 指令协议
 
-服务端向本程序发送 JSON 格式的指令，支持以下三种类型：
+小信使通过 WebSocket 和 HTTP 两种方式接收指令，JSON 格式完全一致。支持以下三种类型：
 
 ### 发送文字
 
@@ -94,6 +102,23 @@ log_level: "INFO"
 }
 ```
 
+### HTTP 接口
+
+向 `/` 或 `/api/message` 发送 POST 请求，请求体为**上述任意 JSON 指令**：
+
+```bash
+curl -X POST http://127.0.0.1:9877/ \
+  -H "Content-Type: application/json" \
+  -d '{"type":"send_message","target":"文件传输助手","message":"Hello"}'
+```
+
+健康检查：
+
+```bash
+curl http://127.0.0.1:9877/health
+# {"status": "ok"}
+```
+
 ## 项目结构
 
 ```
@@ -109,10 +134,13 @@ WeeMessenger/
     ├── __init__.py
     ├── config.py            # 配置管理
     ├── wechat_sender.py     # 核心发送器
-    ├── ws_client.py         # WebSocket 客户端
     ├── voice_sender.py      # 语音发送
     ├── mouse_wanderer.py    # 鼠标漫游
-    └── clipboard_utils.py   # 剪贴板工具
+    ├── clipboard_utils.py   # 剪贴板工具
+    └── network/
+        ├── ws_client.py         # WebSocket 客户端
+        ├── http_server.py       # HTTP 服务器
+        └── message_validator.py # 共享消息校验
 ```
 
 ## 注意事项

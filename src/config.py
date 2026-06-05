@@ -16,7 +16,15 @@ except ImportError:
 
 # 内置默认值
 DEFAULT_CONFIG = {
-    "ws_url": "ws://127.0.0.1:9876",
+    "ws": {
+        "enabled": True,
+        "url": "ws://127.0.0.1:9876",
+    },
+    "http": {
+        "enabled": True,
+        "host": "0.0.0.0",
+        "port": 9877,
+    },
     "wanderer": {
         "enabled": True,
         "min_interval": 10.0,
