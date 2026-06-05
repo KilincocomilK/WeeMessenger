@@ -52,7 +52,7 @@ All configuration options have built-in defaults; only fill in the items you nee
 
 ### 3. Launch!
 
-**Double-click `启动.bat`** — the script will automatically create a virtual environment, install dependencies, display a startup menu. Select **Normal Mode** to run!
+**Double-click `启动.bat`** — the script will automatically create a virtual environment, install dependencies, display a startup menu. Select **标准模式** to run!
 
 > [!IMPORTANT]
 > Before first use, open WeChat, use the shortcut **Ctrl+F**, manually search for the group chat you want to deploy and enter it several times. This ensures the group appears at the **top of the search suggestions**, avoiding interference from "online search results."
